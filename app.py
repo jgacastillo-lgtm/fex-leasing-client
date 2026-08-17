@@ -179,7 +179,18 @@ else:
     m2.metric(f"Pago Inicial a la Firma ({moneda})", f"${pago_inicial_total:,.2f}")
     m3.metric("Plazo Forzoso", f"{plazo_seleccionado} Meses")
     
-    st.info("Nota: Las rentas en el arrendamiento puro son 100% deducibles de impuestos, lo que representa un beneficio fiscal directo para su empresa.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Notas Legales en pantalla (Discretas)
+    st.markdown("""
+    <div style='font-size: 0.85em; color: #7f8c8d; line-height: 1.5; padding: 10px; border-left: 3px solid #e0e0e0;'>
+        <strong>NOTAS IMPORTANTES:</strong><br>
+        1) Esta cotización es de carácter informativo, no representa un compromiso de financiamiento.<br>
+        2) Sujeta a aprobación final por parte del Comité de Crédito de FEX Capital SA de CV.<br>
+        3) Las rentas en el arrendamiento puro son deducibles de impuestos de acuerdo a la legislación vigente.<br>
+        4) El Pago Inicial contempla la primera renta, renta en garantía y comisión por apertura.
+    </div>
+    """, unsafe_allow_html=True)
 
     # ==========================================
     # 7. GENERACIÓN DEL PDF B2B
