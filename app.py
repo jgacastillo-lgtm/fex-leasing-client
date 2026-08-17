@@ -1,9 +1,9 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import numpy_financial as npf
 import json
 import os
+import gspread
 
 # ==========================================
 # 1. CONFIGURACIÓN DE PÁGINA
@@ -20,12 +20,23 @@ HOJA_DATOS_URL = "https://docs.google.com/spreadsheets/d/1kcspEz9Fz0q5Hz27BN-5Yy
 # ==========================================
 @st.cache_resource(ttl=60)
 def cargar_base_datos():
-    # Leer el secreto que guardamos en Streamlit
-    creds = json.loads(st.secrets["gcp_service_account_json"])
-    # Establecer conexión
-    conn = st.connection("gsheets", type=GSheetsConnection, service_account_info=creds)
-    # Descargar la tabla de clientes
-    df = conn.read(spreadsheet=HOJA_DATOS_URL)
+    # 1. Leer el secreto que guardamos en la bóveda de Streamlit
+    creds_dict = json.loads(st.secrets["gcp_service_account_json"])
+    
+    # 2. Autenticar usando el motor nativo de Google (gspread)
+    gc = gspread.service_account_from_dict(creds_dict)
+    
+    # 3. Abrir el documento y extraer la primera hoja
+    doc = gc.open_by_url(HOJA_DATOS_URL)
+    registros = doc.sheet1.get_all_records()
+    
+    # 4. Convertir a DataFrame de Pandas
+    df = pd.DataFrame(registros)
+    
+    # Asegurar que la columna Password sea texto puro para evitar errores de comparación
+    if 'Password' in df.columns:
+        df['Password'] = df['Password'].astype(str)
+        
     return df
 
 # ==========================================
@@ -55,8 +66,9 @@ if not st.session_state.autenticado:
             if password_input:
                 try:
                     df_clientes = cargar_base_datos()
+                    
                     # Buscar si el password existe en la columna 'Password'
-                    cliente_match = df_clientes[df_clientes['Password'] == password_input]
+                    cliente_match = df_clientes[df_clientes['Password'] == str(password_input)]
                     
                     if not cliente_match.empty:
                         # Guardar los datos del cliente en la sesión
@@ -66,7 +78,7 @@ if not st.session_state.autenticado:
                     else:
                         st.error("Código de acceso incorrecto. Verifica con tu ejecutivo de FEX Capital.")
                 except Exception as e:
-                    # AQUÍ SE REVELARÁ EL ERROR TÉCNICO EXACTO
+                    # En producción puedes cambiar esto a un mensaje genérico
                     st.error(f"Detalle técnico del error: {e}")
             else:
                 st.warning("Por favor, ingresa un código válido.")
