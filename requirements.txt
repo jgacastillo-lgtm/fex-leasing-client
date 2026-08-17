@@ -1,0 +1,5 @@
+streamlit
+numpy-financial
+pandas
+fpdf
+st-gsheets-connection
