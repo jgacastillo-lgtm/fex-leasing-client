@@ -13,7 +13,7 @@ st.set_page_config(page_title="FEX Capital - Portal de Clientes", layout="center
 LOGO_PATH = "LOGO_FEX.png"
 
 # REEMPLAZA ESTA LIGA CON LA URL REAL DE TU GOOGLE SHEETS
-HOJA_DATOS_URL = "URL_DE_TU_GOOGLE_SHEETS_AQUI"
+HOJA_DATOS_URL = "https://docs.google.com/spreadsheets/d/1kcspEz9Fz0q5Hz27BN-5Yyoza2yx2OmhHsl5GMFduK0/edit?usp=sharing"
 
 # ==========================================
 # 2. CONEXIÓN A BASE DE DATOS
