@@ -219,8 +219,8 @@ else:
         pdf.cell(90, 10, "__________________________________", 0, 0, 'C'); pdf.cell(90, 10, "__________________________________", 0, 1, 'C')
         pdf.cell(90, 5, f"Por: {cliente['Empresa']}", 0, 0, 'C'); pdf.cell(90, 5, "Por: FEX CAPITAL, S.A. DE C.V.", 0, 1, 'C')
 
-        # Descarga
-        pdf_bytes = bytes(pdf.output())
-        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        # Descarga clásica FPDF
+        pdf_output = pdf.output(dest='S').encode('latin-1')
+        b64_pdf = base64.b64encode(pdf_output).decode('utf-8')
         
-        st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="Cotizacion_Arrendamiento_{cliente["Empresa"]}.pdf" style="padding:12px 20px; background-color:#0163FF; color:white; font-weight:bold; border-radius:4px; text-decoration:none; display:inline-block;">📥 Descargar Documento PDF</a>', unsafe_allow_html=True)
+        st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="Cotizacion_Arrendamiento_{cliente["Empresa"]}.pdf" style="padding:12px 20px; background-color:#0163FF; color:white; font-weight:bold; border-radius:4px; text-decoration:none; display:inline-block;">Descargar Documento PDF</a>', unsafe_allow_html=True)
