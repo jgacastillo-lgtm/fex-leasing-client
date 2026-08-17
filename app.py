@@ -19,6 +19,16 @@ LOGO_CANTALOUPE_PATH = "LOGO_CANTALOUPE.png"
 # REEMPLAZA ESTA LIGA CON LA URL REAL DE TU GOOGLE SHEETS
 HOJA_DATOS_URL = "https://docs.google.com/spreadsheets/d/1kcspEz9Fz0q5Hz27BN-5Yyoza2yx2OmhHsl5GMFduK0/edit?usp=sharing"
 
+# Forzar a Streamlit a no cortar los números de las métricas
+st.markdown("""
+<style>
+[data-testid="stMetricValue"] {
+    overflow: visible !important;
+    white-space: normal !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ==========================================
 # 2. CONEXIÓN A BASE DE DATOS
 # ==========================================
@@ -165,8 +175,8 @@ else:
     
     # Tarjetas de Resumen
     m1, m2, m3 = st.columns(3)
-    m1.metric("Renta Mensual (IVA incluido)", f"{moneda} ${renta_total:,.2f}")
-    m2.metric("Pago Inicial a la Firma", f"{moneda} ${pago_inicial_total:,.2f}")
+    m1.metric(f"Renta Mensual ({moneda})", f"${renta_total:,.2f}")
+    m2.metric(f"Pago Inicial a la Firma ({moneda})", f"${pago_inicial_total:,.2f}")
     m3.metric("Plazo Forzoso", f"{plazo_seleccionado} Meses")
     
     st.info("Nota: Las rentas en el arrendamiento puro son 100% deducibles de impuestos, lo que representa un beneficio fiscal directo para su empresa.")
@@ -223,4 +233,4 @@ else:
         pdf_output = pdf.output(dest='S').encode('latin-1')
         b64_pdf = base64.b64encode(pdf_output).decode('utf-8')
         
-        st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="Cotizacion_Arrendamiento_{cliente["Empresa"]}.pdf" style="padding:12px 20px; background-color:#0163FF; color:white; font-weight:bold; border-radius:4px; text-decoration:none; display:inline-block;">Descargar Documento PDF</a>', unsafe_allow_html=True)
+        st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="Cotizacion_Arrendamiento_{cliente["Empresa"]}.pdf" style="padding:12px 20px; background-color:#0163FF; color:white; font-weight:bold; border-radius:4px; text-decoration:none; display:inline-block;">📥 Descargar Documento PDF</a>', unsafe_allow_html=True)
