@@ -66,7 +66,8 @@ if not st.session_state.autenticado:
                     else:
                         st.error("Código de acceso incorrecto. Verifica con tu ejecutivo de FEX Capital.")
                 except Exception as e:
-                    st.error("Error de conexión. Por favor, intenta más tarde.")
+                    # AQUÍ SE REVELARÁ EL ERROR TÉCNICO EXACTO
+                    st.error(f"Detalle técnico del error: {e}")
             else:
                 st.warning("Por favor, ingresa un código válido.")
 
