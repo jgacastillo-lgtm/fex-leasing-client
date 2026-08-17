@@ -4,13 +4,17 @@ import numpy_financial as npf
 import json
 import os
 import gspread
+import base64
+from fpdf import FPDF
+from datetime import datetime
 
 # ==========================================
-# 1. CONFIGURACIÓN DE PÁGINA
+# 1. CONFIGURACIÓN DE PÁGINA Y CONSTANTES
 # ==========================================
 st.set_page_config(page_title="FEX Capital - Portal de Clientes", layout="centered")
 
-LOGO_PATH = "LOGO_FEX.png"
+LOGO_FEX_PATH = "LOGO_FEX.png"
+LOGO_CANTALOUPE_PATH = "LOGO_CANTALOUPE.png"
 
 # REEMPLAZA ESTA LIGA CON LA URL REAL DE TU GOOGLE SHEETS
 HOJA_DATOS_URL = "https://docs.google.com/spreadsheets/d/1kcspEz9Fz0q5Hz27BN-5Yyoza2yx2OmhHsl5GMFduK0/edit?usp=sharing"
@@ -20,42 +24,63 @@ HOJA_DATOS_URL = "https://docs.google.com/spreadsheets/d/1kcspEz9Fz0q5Hz27BN-5Yy
 # ==========================================
 @st.cache_resource(ttl=60)
 def cargar_base_datos():
-    # 1. Leer el secreto que guardamos en la bóveda de Streamlit
     creds_dict = json.loads(st.secrets["gcp_service_account_json"])
-    
-    # 2. Autenticar usando el motor nativo de Google (gspread)
     gc = gspread.service_account_from_dict(creds_dict)
-    
-    # 3. Abrir el documento y extraer la primera hoja
     doc = gc.open_by_url(HOJA_DATOS_URL)
     registros = doc.sheet1.get_all_records()
-    
-    # 4. Convertir a DataFrame de Pandas
     df = pd.DataFrame(registros)
     
-    # Asegurar que la columna Password sea texto puro para evitar errores de comparación
     if 'Password' in df.columns:
         df['Password'] = df['Password'].astype(str)
         
     return df
 
 # ==========================================
-# 3. GESTIÓN DE SESIÓN (LOGIN)
+# 3. CLASE PARA GENERACIÓN DE PDF
+# ==========================================
+class CotizacionPDF(FPDF):
+    def header(self):
+        # Logo FEX (Izquierda)
+        if os.path.exists(LOGO_FEX_PATH):
+            self.image(LOGO_FEX_PATH, x=10, y=10, w=35)
+        # Logo Cantaloupe (Derecha)
+        if os.path.exists(LOGO_CANTALOUPE_PATH):
+            self.image(LOGO_CANTALOUPE_PATH, x=165, y=10, w=35)
+            
+        self.set_y(25)
+        self.set_font('Arial', 'B', 12)
+        self.set_text_color(27, 27, 27) 
+        self.cell(0, 6, 'Cotización Preliminar de Arrendamiento Puro', 0, 1, 'C')
+        
+        fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+        self.set_font('Arial', '', 9)
+        self.set_text_color(100, 100, 100)
+        self.cell(0, 5, f'Fecha: {fecha_hoy}', 0, 1, 'C')
+        self.ln(10)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.set_text_color(128, 128, 128)
+        self.cell(0, 10, f'Página {self.page_no()}', 0, 0, 'C')
+
+# ==========================================
+# 4. GESTIÓN DE SESIÓN (LOGIN)
 # ==========================================
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
     st.session_state.datos_cliente = None
 
 # ==========================================
-# 4. PANTALLA DE ACCESO
+# 5. PANTALLA DE ACCESO
 # ==========================================
 if not st.session_state.autenticado:
     st.markdown("<br><br>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if os.path.exists(LOGO_PATH):
-            st.image(LOGO_PATH, use_container_width=True)
+        if os.path.exists(LOGO_FEX_PATH):
+            st.image(LOGO_FEX_PATH, use_container_width=True)
         
         st.markdown("<h3 style='text-align: center; color: #1B1B1B;'>Portal de Arrendamiento</h3>", unsafe_allow_html=True)
         st.markdown("---")
@@ -66,51 +91,51 @@ if not st.session_state.autenticado:
             if password_input:
                 try:
                     df_clientes = cargar_base_datos()
-                    
-                    # Buscar si el password existe en la columna 'Password'
                     cliente_match = df_clientes[df_clientes['Password'] == str(password_input)]
                     
                     if not cliente_match.empty:
-                        # Guardar los datos del cliente en la sesión
                         st.session_state.datos_cliente = cliente_match.iloc[0].to_dict()
                         st.session_state.autenticado = True
                         st.rerun()
                     else:
                         st.error("Código de acceso incorrecto. Verifica con tu ejecutivo de FEX Capital.")
                 except Exception as e:
-                    # En producción puedes cambiar esto a un mensaje genérico
                     st.error(f"Detalle técnico del error: {e}")
             else:
                 st.warning("Por favor, ingresa un código válido.")
 
 # ==========================================
-# 5. PANTALLA DEL COTIZADOR VIP
+# 6. PANTALLA DEL COTIZADOR VIP
 # ==========================================
 else:
     cliente = st.session_state.datos_cliente
+    moneda = cliente['Moneda']
     
-    # Barra Superior
-    col_logo, col_logout = st.columns([4, 1])
-    with col_logo:
-        if os.path.exists(LOGO_PATH):
-            st.image(LOGO_PATH, width=150)
+    # Barra Superior (Logos y Logout)
+    col_logo1, col_vacio, col_logo2, col_logout = st.columns([2, 3, 2, 2])
+    with col_logo1:
+        if os.path.exists(LOGO_FEX_PATH):
+            st.image(LOGO_FEX_PATH, use_container_width=True)
+    with col_logo2:
+        if os.path.exists(LOGO_CANTALOUPE_PATH):
+            st.image(LOGO_CANTALOUPE_PATH, use_container_width=True)
     with col_logout:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Cerrar Sesión"):
+        if st.button("Cerrar Sesión", use_container_width=True):
             st.session_state.autenticado = False
             st.session_state.datos_cliente = None
             st.rerun()
             
     st.markdown("---")
     st.markdown(f"### Bienvenido, {cliente['Empresa']}")
-    st.markdown(f"**Condiciones pre-aprobadas en {cliente['Moneda']}**")
+    st.markdown(f"**Condiciones pre-aprobadas en {moneda}**")
     
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Entradas del Cliente
     col_input1, col_input2 = st.columns(2)
     with col_input1:
-        precio_input = st.number_input(f"Valor del Activo ({cliente['Moneda']})", min_value=1000.0, value=500000.0, step=10000.0)
+        precio_input = st.number_input(f"Valor del Activo ({moneda})", min_value=1000.0, value=500000.0, step=10000.0)
     with col_input2:
         plazos_permitidos = [12, 24, 36, 48, 60]
         plazo_seleccionado = st.selectbox("Plazo de Arrendamiento (Meses)", plazos_permitidos, index=2)
@@ -140,8 +165,62 @@ else:
     
     # Tarjetas de Resumen
     m1, m2, m3 = st.columns(3)
-    m1.metric("Renta Mensual (IVA incluido)", f"${renta_total:,.2f}")
-    m2.metric("Pago Inicial (Firma de Contrato)", f"${pago_inicial_total:,.2f}")
+    m1.metric("Renta Mensual (IVA incluido)", f"{moneda} ${renta_total:,.2f}")
+    m2.metric("Pago Inicial a la Firma", f"{moneda} ${pago_inicial_total:,.2f}")
     m3.metric("Plazo Forzoso", f"{plazo_seleccionado} Meses")
     
     st.info("Nota: Las rentas en el arrendamiento puro son 100% deducibles de impuestos, lo que representa un beneficio fiscal directo para su empresa.")
+
+    # ==========================================
+    # 7. GENERACIÓN DEL PDF B2B
+    # ==========================================
+    st.markdown("---")
+    if st.button("Generar y Descargar Cotización PDF"):
+        pdf = CotizacionPDF()
+        pdf.add_page()
+        pdf.set_text_color(27, 27, 27)
+        
+        # 1. INFORMACIÓN DEL CLIENTE Y ACTIVO
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 8, "1. INFORMACIÓN GENERAL", ln=True, border='B')
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(95, 7, f"Cliente: {cliente['Empresa']}", 0, 0)
+        pdf.cell(95, 7, f"Plazo Forzoso: {plazo_seleccionado} Meses", 0, 1)
+        pdf.cell(0, 7, f"Valor del Activo (IVA inc): {moneda} ${precio_input:,.2f}", 0, 1)
+        pdf.ln(5)
+
+        # 2. RESUMEN FINANCIERO COMERCIAL
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 8, "2. RESUMEN FINANCIERO", ln=True, border='B')
+        pdf.ln(3)
+        
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(95, 7, f"Renta Mensual (IVA inc):", 0, 0)
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(95, 7, f"{moneda} ${renta_total:,.2f}", 0, 1)
+        
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(95, 7, f"Pago Inicial (Firma de Contrato):", 0, 0)
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(95, 7, f"{moneda} ${pago_inicial_total:,.2f}", 0, 1)
+        pdf.ln(5)
+
+        # 3. NOTAS LEGALES
+        pdf.set_font("Arial", 'I', 8)
+        pdf.cell(0, 5, "NOTAS IMPORTANTES:", ln=True)
+        pdf.cell(0, 5, "1) Esta cotización es de carácter informativo, no representa un compromiso de financiamiento.", ln=True)
+        pdf.cell(0, 5, "2) Sujeta a aprobación final por parte del Comité de Crédito de FEX Capital SA de CV.", ln=True)
+        pdf.cell(0, 5, "3) Las rentas en el arrendamiento puro son deducibles de impuestos de acuerdo a la legislación vigente.", ln=True)
+        pdf.cell(0, 5, "4) El Pago Inicial contempla la primera renta, renta en garantía y comisión por apertura.", ln=True)
+
+        # FIRMAS
+        pdf.ln(20)
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(90, 10, "__________________________________", 0, 0, 'C'); pdf.cell(90, 10, "__________________________________", 0, 1, 'C')
+        pdf.cell(90, 5, f"Por: {cliente['Empresa']}", 0, 0, 'C'); pdf.cell(90, 5, "Por: FEX CAPITAL, S.A. DE C.V.", 0, 1, 'C')
+
+        # Descarga
+        pdf_bytes = bytes(pdf.output())
+        b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+        
+        st.markdown(f'<a href="data:application/pdf;base64,{b64_pdf}" download="Cotizacion_Arrendamiento_{cliente["Empresa"]}.pdf" style="padding:12px 20px; background-color:#0163FF; color:white; font-weight:bold; border-radius:4px; text-decoration:none; display:inline-block;">📥 Descargar Documento PDF</a>', unsafe_allow_html=True)
