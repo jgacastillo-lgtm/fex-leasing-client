@@ -56,11 +56,11 @@ class CotizacionPDF(FPDF):
             
         # Logo Cantaloupe (Izquierda Inferior, debajo de FEX)
         if os.path.exists(LOGO_CANTALOUPE_PATH):
-            # Se le da un ancho mayor (w=55) porque es un logo muy horizontal
-            self.image(LOGO_CANTALOUPE_PATH, x=10, y=20, w=55)
+            # Se ajustó a y=26 para asegurar que no se encime con FEX
+            self.image(LOGO_CANTALOUPE_PATH, x=10, y=26, w=55)
             
-        # Se baja el inicio del texto para no encimarse con los logos apilados
-        self.set_y(38)
+        # Se bajó significativamente el inicio del texto (y=46) para dar espacio a ambos logos apilados
+        self.set_y(46)
         self.set_font('Arial', 'B', 12)
         self.set_text_color(27, 27, 27) 
         self.cell(0, 6, 'Cotización Preliminar de Arrendamiento Puro', 0, 1, 'C')
