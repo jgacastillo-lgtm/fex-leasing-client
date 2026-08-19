@@ -50,14 +50,17 @@ def cargar_base_datos():
 # ==========================================
 class CotizacionPDF(FPDF):
     def header(self):
-        # Logo FEX (Izquierda)
+        # Logo FEX (Izquierda Superior)
         if os.path.exists(LOGO_FEX_PATH):
             self.image(LOGO_FEX_PATH, x=10, y=10, w=35)
-        # Logo Cantaloupe (Derecha)
-        if os.path.exists(LOGO_CANTALOUPE_PATH):
-            self.image(LOGO_CANTALOUPE_PATH, x=165, y=10, w=35)
             
-        self.set_y(25)
+        # Logo Cantaloupe (Izquierda Inferior, debajo de FEX)
+        if os.path.exists(LOGO_CANTALOUPE_PATH):
+            # Se le da un ancho mayor (w=55) porque es un logo muy horizontal
+            self.image(LOGO_CANTALOUPE_PATH, x=10, y=20, w=55)
+            
+        # Se baja el inicio del texto para no encimarse con los logos apilados
+        self.set_y(38)
         self.set_font('Arial', 'B', 12)
         self.set_text_color(27, 27, 27) 
         self.cell(0, 6, 'Cotización Preliminar de Arrendamiento Puro', 0, 1, 'C')
@@ -89,10 +92,13 @@ if not st.session_state.autenticado:
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # Apilamos ambos logos en la pantalla de inicio de sesión
         if os.path.exists(LOGO_FEX_PATH):
             st.image(LOGO_FEX_PATH, use_container_width=True)
+        if os.path.exists(LOGO_CANTALOUPE_PATH):
+            st.image(LOGO_CANTALOUPE_PATH, use_container_width=True)
         
-        st.markdown("<h3 style='text-align: center; color: #1B1B1B;'>Portal de Arrendamiento</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center; color: #1B1B1B; margin-top: 20px;'>Portal de Arrendamiento</h3>", unsafe_allow_html=True)
         st.markdown("---")
         
         password_input = st.text_input("Código de Acceso", type="password", placeholder="Ingresa tu clave corporativa")
@@ -121,14 +127,14 @@ else:
     cliente = st.session_state.datos_cliente
     moneda = cliente['Moneda']
     
-    # Barra Superior (Logos y Logout)
-    col_logo1, col_vacio, col_logo2, col_logout = st.columns([2, 3, 2, 2])
-    with col_logo1:
+    # Barra Superior (Logos apilados a la izquierda y Logout a la derecha)
+    col_logos, col_vacio, col_logout = st.columns([3, 5, 2])
+    with col_logos:
         if os.path.exists(LOGO_FEX_PATH):
             st.image(LOGO_FEX_PATH, use_container_width=True)
-    with col_logo2:
         if os.path.exists(LOGO_CANTALOUPE_PATH):
             st.image(LOGO_CANTALOUPE_PATH, use_container_width=True)
+            
     with col_logout:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Cerrar Sesión", use_container_width=True):
